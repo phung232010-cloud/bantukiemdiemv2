@@ -65,7 +65,7 @@ const firebaseConfig = {
     messagingSenderId: "392820312997",
     appId: "1:392820312997:web:4507c78aa45a1a997df64c",
     measurementId: "G-4EG4VXDT73",
-    databaseURL: "https://bantukiemdiem-df3ba-default-rtdb.asia-southeast1.firebasedatabase.app"
+    databaseURL: "https://bantukiemdiem-df3ba-default-rtdb.firebaseio.com"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -80,25 +80,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function initializeStudents() {
     try {
+        console.log('Đang kết nối đến Firebase...');
         const snapshot = await database.ref('students').once('value');
         if (!snapshot.exists()) {
-            console.log('No students in Realtime Database, initializing with default list...');
+            console.log('Không có dữ liệu học sinh, đang tạo danh sách mặc định...');
             const updates = {};
-            defaultStudents.forEach(student => {
-                updates[student.id] = {
-                    id: student.id,
+            defaultStudents.forEach((student, index) => {
+                const id = Date.now() + index;
+                updates[id] = {
+                    id: id,
                     name: student.name,
                     images: []
                 };
             });
             await database.ref('students').update(updates);
+            console.log('Đã tạo danh sách học sinh thành công!');
             await loadStudentsFromDatabase();
         } else {
+            console.log('Đã tải danh sách học sinh từ Firebase!');
             await loadStudentsFromDatabase();
         }
     } catch (error) {
-        console.error('Error initializing students:', error);
-        alert('Lỗi kết nối đến Firebase! Vui lòng kiểm tra lại cài đặt.');
+        console.error('Lỗi khởi tạo:', error);
+        alert('Lỗi kết nối đến Firebase!\n\nVui lòng kiểm tra:\n1. Quy tắc bảo mật (Rules) đã được đặt đúng chưa?\n2. Đường dẫn database URL đúng chưa?\n\nThông tin lỗi: ' + error.message);
     }
 }
 
