@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản tự kiểm điểm Lớp 10A1 - THPT Nghi Lộc 3</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Teacher View -->
+        <div id="teacherView" class="view">
+            <header>
+                <h1>🎓 Quản Lý Bản tự kiểm điểm</h1>
+                <h2>Lớp 10A1 - THPT Nghi Lộc 3</h2>
+            </header>
+            
+            <div class="section">
+                <h3>⚙️ Cấu Hình Cloudinary</h3>
+                <div class="form-group">
+                    <label for="cloudinaryCloudName">Cloud Name:</label>
+                    <input type="text" id="cloudinaryCloudName" placeholder="Nhập Cloud Name của bạn">
+                </div>
+                <div class="form-group">
+                    <label for="cloudinaryUploadPreset">Upload Preset:</label>
+                    <input type="text" id="cloudinaryUploadPreset" placeholder="Nhập Upload Preset (unsigned)">
+                </div>
+                <button id="saveCloudinaryBtn" class="small-btn">Lưu Cấu Hình</button>
+                <p class="qr-note">
+                    <a href="https://cloudinary.com/users/register/free" target="_blank" style="color: #667eea;">
+                        Đăng ký Cloudinary miễn phí (25GB)
+                    </a>
+                </p>
+            </div>
+            
+            <div class="section">
+                <h3>Thêm Học Sinh</h3>
+                <form id="addStudentForm">
+                    <div class="form-group">
+                        <label for="studentName">Tên Học Sinh:</label>
+                        <input type="text" id="studentName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentImage">Ảnh Bảng Điểm:</label>
+                        <input type="file" id="studentImage" accept="image/*" required>
+                    </div>
+                    <button type="submit">Thêm Học Sinh</button>
+                </form>
+            </div>
+            
+            <div class="section">
+                <h3>Danh Sách Học Sinh</h3>
+                <div id="studentList" class="student-list"></div>
+            </div>
+            
+
+            
+            <div class="section">
+                <h3>Mã QR Cho Phụ Huynh</h3>
+                <div id="qrcode"></div>
+                <button id="generateQRBtn">Tạo/Làm Mới Mã QR</button>
+                <p class="qr-note">Quét mã QR để xem bản tự điểm</p>
+            </div>
+        </div>
+        
+        <!-- Parent View -->
+        <div id="parentView" class="view hidden">
+            <header>
+                <h1>👨‍👩‍👧‍👦 Xem Bản tự Điểm</h1>
+                <h2>Lớp 10A1 - THPT Nghi Lộc 3</h2>
+            </header>
+            
+            <div class="section">
+                <h3>Chọn Tên Học Sinh</h3>
+                <div id="parentStudentList" class="student-list"></div>
+            </div>
+            
+            <button id="backToTeacherBtn" class="small-btn">Quay Lại Trang Giáo Viên</button>
+        </div>
+    </div>
+    
+    <!-- Modal for viewing image -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <div class="nav-controls">
+                <button id="prevImageBtn">← Trước</button>
+                <span id="imageCounter">1 / 1</span>
+                <button id="nextImageBtn">Sau →</button>
+            </div>
+            <div class="rotate-controls">
+                <button id="rotateLeftBtn">↶ Xoay trái</button>
+                <button id="rotateRightBtn">↷ Xoay phải</button>
+                <button id="saveRotationBtn">💾 Lưu ảnh</button>
+            </div>
+            <div class="zoom-controls">
+                <button id="zoomOutBtn">−</button>
+                <span id="zoomLevel">100%</span>
+                <button id="zoomInBtn">+</button>
+                <button id="resetZoomBtn">Đặt lại</button>
+            </div>
+            <img id="modalImage" src="" alt="Bảng Điểm">
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
