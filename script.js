@@ -52,6 +52,7 @@ let qrCodeInstance = null;
 let currentZoom = 100;
 let currentImageIndex = 0;
 let currentStudentImages = [];
+let currentStudentRotations = [];
 let currentStudentName = '';
 let currentStudentId = null;
 let currentRotation = 0;
@@ -90,7 +91,8 @@ async function initializeStudents() {
                 updates[id] = {
                     id: id,
                     name: student.name,
-                    images: []
+                    images: [],
+                    rotations: []
                 };
             });
             await database.ref('students').update(updates);
@@ -111,7 +113,16 @@ async function loadStudentsFromDatabase() {
         const snapshot = await database.ref('students').orderByChild('name').once('value');
         students = [];
         snapshot.forEach(childSnapshot => {
-            students.push(childSnapshot.val());
+            const student = childSnapshot.val();
+            if (!student.rotations) {
+                student.rotations = [];
+                if (student.images) {
+                    student.images.forEach(() => {
+                        student.rotations.push(0);
+                    });
+                }
+            }
+            students.push(student);
         });
         renderStudentList();
         renderParentStudentList();
@@ -260,7 +271,8 @@ async function addStudent(e) {
             const student = {
                 id: Date.now(),
                 name: nameInput.value,
-                images: [imgUrl]
+                images: [imgUrl],
+                rotations: [0]
             };
             
             await saveStudentToDatabase(student);
@@ -288,6 +300,9 @@ async function addImageToStudent(id, input) {
     if (!student.images) {
         student.images = [];
     }
+    if (!student.rotations) {
+        student.rotations = [];
+    }
     
     let filesProcessed = 0;
     const totalFiles = input.files.length;
@@ -296,6 +311,7 @@ async function addImageToStudent(id, input) {
         const imgUrl = await uploadToCloudinary(input.files[i]);
         if (imgUrl) {
             student.images.push(imgUrl);
+            student.rotations.push(0);
             filesProcessed++;
             if (filesProcessed >= totalFiles) {
                 await saveStudentToDatabase(student);
@@ -372,10 +388,11 @@ function openImageModal(studentId) {
     }
     
     currentStudentImages = student.images;
+    currentStudentRotations = student.rotations || [];
     currentStudentName = student.name;
     currentStudentId = studentId;
     currentImageIndex = 0;
-    currentRotation = 0;
+    currentRotation = currentStudentRotations[0] || 0;
     
     const modal = document.getElementById('imageModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -384,7 +401,7 @@ function openImageModal(studentId) {
     
     modalTitle.textContent = currentStudentName;
     modalImage.src = currentStudentImages[0];
-    modalImage.style.transform = 'rotate(0deg)';
+    modalImage.style.transform = `rotate(${currentRotation}deg)`;
     imageCounter.textContent = `1 / ${currentStudentImages.length}`;
     modal.style.display = 'block';
     resetZoom();
@@ -410,8 +427,8 @@ function updateModalImage() {
     const imageCounter = document.getElementById('imageCounter');
     
     modalImage.src = currentStudentImages[currentImageIndex];
-    modalImage.style.transform = 'rotate(0deg)';
-    currentRotation = 0;
+    currentRotation = currentStudentRotations[currentImageIndex] || 0;
+    modalImage.style.transform = `rotate(${currentRotation}deg)`;
     imageCounter.textContent = `${currentImageIndex + 1} / ${currentStudentImages.length}`;
     resetZoom();
     updateNavButtons();
@@ -429,56 +446,28 @@ function rotateRight() {
 
 function updateImageRotation() {
     const modalImage = document.getElementById('modalImage');
-    modalImage.style.transform = `rotate(${currentRotation}deg)`;
+    modalImage.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom / 100})`;
 }
 
 async function saveRotatedImage() {
-    if (currentRotation === 0) {
-        alert('Ảnh chưa được xoay!');
+    const student = students.find(s => s.id == currentStudentId);
+    if (!student) {
+        alert('Không tìm thấy học sinh!');
         return;
     }
     
-    const modalImage = document.getElementById('modalImage');
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = async function() {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const rad = (currentRotation % 360) * Math.PI / 180;
-        
-        if (Math.abs(currentRotation % 180) === 90) {
-            canvas.width = img.height;
-            canvas.height = img.width;
-        } else {
-            canvas.width = img.width;
-            canvas.height = img.height;
-        }
-        
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(rad);
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        
-        const dataURL = canvas.toDataURL('image/jpeg', 0.95);
-        
-        const blob = await (await fetch(dataURL)).blob();
-        const file = new File([blob], "rotated.jpg", { type: "image/jpeg" });
-        
-        const newImgUrl = await uploadToCloudinary(file);
-        if (newImgUrl) {
-            const student = students.find(s => s.id == currentStudentId);
-            if (student) {
-                student.images[currentImageIndex] = newImgUrl;
-                await saveStudentToDatabase(student);
-                await loadStudentsFromDatabase();
-                currentStudentImages = student.images;
-                currentRotation = 0;
-                modalImage.src = newImgUrl;
-                modalImage.style.transform = 'rotate(0deg)';
-                alert('Đã lưu ảnh xoay!');
-            }
-        }
-    };
-    img.src = currentStudentImages[currentImageIndex];
+    if (!student.rotations) {
+        student.rotations = [];
+    }
+    
+    student.rotations[currentImageIndex] = currentRotation;
+    
+    await saveStudentToDatabase(student);
+    await loadStudentsFromDatabase();
+    
+    currentStudentRotations = student.rotations;
+    
+    alert('✅ Đã lưu góc xoay thành công!');
 }
 
 function updateNavButtons() {
@@ -506,7 +495,7 @@ function resetZoom() {
 function updateZoom() {
     const modalImage = document.getElementById('modalImage');
     const zoomLevel = document.getElementById('zoomLevel');
-    modalImage.style.transform = `scale(${currentZoom / 100})`;
+    modalImage.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom / 100})`;
     zoomLevel.textContent = currentZoom + '%';
 }
 
